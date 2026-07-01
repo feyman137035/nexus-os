@@ -15,15 +15,20 @@ LDFLAGS = -ffreestanding -O2 -nostdlib -m32
 BUILD_DIR = build
 BOOT_DIR = boot
 KERNEL_DIR = kernel
+DRIVERS_DIR = drivers
 
 # Files
 BOOT_ASM = $(BOOT_DIR)/boot.asm
 KERNEL_C = $(KERNEL_DIR)/kernel.c
+KPRINTF_C = $(KERNEL_DIR)/kprintf.c
+VGA_C = $(DRIVERS_DIR)/vga.c
 LINKER_SCRIPT = $(BOOT_DIR)/linker.ld
 
 # Output files
 BOOT_OBJ = $(BUILD_DIR)/boot.o
 KERNEL_OBJ = $(BUILD_DIR)/kernel.o
+KPRINTF_OBJ = $(BUILD_DIR)/kprintf.o
+VGA_OBJ = $(BUILD_DIR)/vga.o
 KERNEL_BIN = $(BUILD_DIR)/nexus.bin
 
 # Default target
@@ -41,9 +46,17 @@ $(BOOT_OBJ): $(BOOT_ASM) $(BUILD_DIR)
 $(KERNEL_OBJ): $(KERNEL_C) $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compile kprintf.c
+$(KPRINTF_OBJ): $(KPRINTF_C) $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile vga.c
+$(VGA_OBJ): $(VGA_C) $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Link kernel
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(LINKER_SCRIPT)
-	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) $(BOOT_OBJ) $(KERNEL_OBJ) -o $@
+$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(VGA_OBJ) $(LINKER_SCRIPT)
+	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(VGA_OBJ) -o $@
 
 # Run kernel in QEMU
 run: $(KERNEL_BIN)
