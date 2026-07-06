@@ -21,12 +21,15 @@ DRIVERS_DIR = drivers
 BOOT_ASM = $(BOOT_DIR)/boot.asm
 KERNEL_C = $(KERNEL_DIR)/kernel.c
 KPRINTF_C = $(KERNEL_DIR)/kprintf.c
+STRING_C = $(KERNEL_DIR)/string.c
+SHELL_C = $(KERNEL_DIR)/shell.c
 GDT_C = $(KERNEL_DIR)/gdt.c
 IDT_C = $(KERNEL_DIR)/idt.c
 ISR_C = $(KERNEL_DIR)/isr.c
 IRQ_C = $(KERNEL_DIR)/irq.c
 VGA_C = $(DRIVERS_DIR)/vga.c
 TIMER_C = $(DRIVERS_DIR)/timer.c
+KEYBOARD_C = $(DRIVERS_DIR)/keyboard.c
 GDT_FLUSH_ASM = $(KERNEL_DIR)/gdt_flush.asm
 IDT_FLUSH_ASM = $(KERNEL_DIR)/idt_flush.asm
 ISR_STUBS_ASM = $(KERNEL_DIR)/isr_stubs.asm
@@ -37,12 +40,15 @@ LINKER_SCRIPT = $(BOOT_DIR)/linker.ld
 BOOT_OBJ = $(BUILD_DIR)/boot.o
 KERNEL_OBJ = $(BUILD_DIR)/kernel.o
 KPRINTF_OBJ = $(BUILD_DIR)/kprintf.o
+STRING_OBJ = $(BUILD_DIR)/string.o
+SHELL_OBJ = $(BUILD_DIR)/shell.o
 GDT_OBJ = $(BUILD_DIR)/gdt.o
 IDT_OBJ = $(BUILD_DIR)/idt.o
 ISR_OBJ = $(BUILD_DIR)/isr.o
 IRQ_OBJ = $(BUILD_DIR)/irq.o
 VGA_OBJ = $(BUILD_DIR)/vga.o
 TIMER_OBJ = $(BUILD_DIR)/timer.o
+KEYBOARD_OBJ = $(BUILD_DIR)/keyboard.o
 GDT_FLUSH_OBJ = $(BUILD_DIR)/gdt_flush.o
 IDT_FLUSH_OBJ = $(BUILD_DIR)/idt_flush.o
 ISR_STUBS_OBJ = $(BUILD_DIR)/isr_stubs.o
@@ -92,6 +98,18 @@ $(IRQ_OBJ): $(IRQ_C) $(BUILD_DIR)
 $(TIMER_OBJ): $(TIMER_C) $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compile keyboard.c
+$(KEYBOARD_OBJ): $(KEYBOARD_C) $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile string.c
+$(STRING_OBJ): $(STRING_C) $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile shell.c
+$(SHELL_OBJ): $(SHELL_C) $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Assemble gdt_flush.asm
 $(GDT_FLUSH_OBJ): $(GDT_FLUSH_ASM) $(BUILD_DIR)
 	$(AS) -f elf32 $< -o $@
@@ -109,8 +127,8 @@ $(IRQ_STUBS_OBJ): $(IRQ_STUBS_ASM) $(BUILD_DIR)
 	$(AS) -f elf32 $< -o $@
 
 # Link kernel
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(GDT_OBJ) $(IDT_OBJ) $(ISR_OBJ) $(IRQ_OBJ) $(VGA_OBJ) $(TIMER_OBJ) $(GDT_FLUSH_OBJ) $(IDT_FLUSH_OBJ) $(ISR_STUBS_OBJ) $(IRQ_STUBS_OBJ) $(LINKER_SCRIPT)
-	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(GDT_OBJ) $(IDT_OBJ) $(ISR_OBJ) $(IRQ_OBJ) $(VGA_OBJ) $(TIMER_OBJ) $(GDT_FLUSH_OBJ) $(IDT_FLUSH_OBJ) $(ISR_STUBS_OBJ) $(IRQ_STUBS_OBJ) -o $@
+$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(STRING_OBJ) $(SHELL_OBJ) $(GDT_OBJ) $(IDT_OBJ) $(ISR_OBJ) $(IRQ_OBJ) $(VGA_OBJ) $(TIMER_OBJ) $(KEYBOARD_OBJ) $(GDT_FLUSH_OBJ) $(IDT_FLUSH_OBJ) $(ISR_STUBS_OBJ) $(IRQ_STUBS_OBJ) $(LINKER_SCRIPT)
+	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) $(BOOT_OBJ) $(KERNEL_OBJ) $(KPRINTF_OBJ) $(STRING_OBJ) $(SHELL_OBJ) $(GDT_OBJ) $(IDT_OBJ) $(ISR_OBJ) $(IRQ_OBJ) $(VGA_OBJ) $(TIMER_OBJ) $(KEYBOARD_OBJ) $(GDT_FLUSH_OBJ) $(IDT_FLUSH_OBJ) $(ISR_STUBS_OBJ) $(IRQ_STUBS_OBJ) -o $@
 
 # Run kernel in QEMU
 run: $(KERNEL_BIN)
