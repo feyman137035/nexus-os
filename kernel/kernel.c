@@ -1,40 +1,16 @@
 // Minimal kernel entry point
 // This runs in a freestanding environment with no standard library
-// Phase 2: VGA text-mode driver and kprintf
+// Phase 4: GDT, IDT, ISR, IRQ, timer, keyboard, and shell
 
 #include "kprintf.h"
+#include "gdt.h"
+#include "idt.h"
+#include "isr.h"
+#include "irq.h"
+#include "shell.h"
 #include "../drivers/vga.h"
-
-// Serial port for headless testing
-#define SERIAL_COM1_PORT 0x3F8
-#define SERIAL_DATA_REG   (SERIAL_COM1_PORT + 0)
-#define SERIAL_LINE_STATUS_REG (SERIAL_COM1_PORT + 5)
-
-static inline unsigned char inb(unsigned short port) {
-    unsigned char result;
-    __asm__ volatile("inb %1, %0" : "=a" (result) : "Nd" (port));
-    return result;
-}
-
-static inline void outb(unsigned short port, unsigned char data) {
-    __asm__ volatile("outb %0, %1" : : "a" (data), "Nd" (port));
-}
-
-static int serial_is_transmit_ready() {
-    return inb(SERIAL_LINE_STATUS_REG) & 0x20;
-}
-
-static void serial_write_char(char c) {
-    while (!serial_is_transmit_ready());
-    outb(SERIAL_DATA_REG, c);
-}
-
-static void serial_write_string(const char* str) {
-    while (*str != '\0') {
-        serial_write_char(*str);
-        str++;
-    }
-}
+#include "../drivers/timer.h"
+#include "../drivers/keyboard.h"
 
 // Kernel main entry point - called from boot.asm
 void kernel_main() {
@@ -43,53 +19,41 @@ void kernel_main() {
     
     // Print colored heading to VGA
     vga_setcolor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLUE);
-    kprintf("=== Nexus OS v0.1 ===\n\n");
+    kprintf("=== Nexus OS v0.2 ===\n\n");
     
     // Reset to default color
     vga_setcolor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     
-    // Demonstrate kprintf with various format specifiers
-    kprintf("Testing kprintf() functionality:\n\n");
+    // Initialize GDT
+    kprintf("Initializing GDT...\n");
+    gdt_install();
     
-    // String printing
-    kprintf("String: %s\n", "Hello from Nexus OS");
+    // Initialize IDT
+    kprintf("Initializing IDT...\n");
+    idt_install();
     
-    // Character printing
-    kprintf("Character: %c\n", 'X');
+    // Install ISRs (CPU exception handlers)
+    kprintf("Installing ISRs...\n");
+    isr_install();
     
-    // Decimal numbers
-    kprintf("Decimal: %d\n", 42);
-    kprintf("Negative: %d\n", -123);
+    // Install IRQs (hardware interrupt handlers)
+    kprintf("Installing IRQs...\n");
+    irq_install();
     
-    // Unsigned numbers
-    kprintf("Unsigned: %u\n", 255);
+    // Initialize timer (100Hz)
+    kprintf("Initializing timer...\n");
+    timer_init(100);
     
-    // Hexadecimal
-    kprintf("Hexadecimal: %x\n", 0xDEADBEEF);
+    // Enable interrupts
+    kprintf("Enabling interrupts...\n");
+    __asm__ volatile("sti");
     
-    // Literal percent
-    kprintf("Literal percent: %%\n\n");
+    // Initialize keyboard driver
+    kprintf("Initializing keyboard...\n");
+    keyboard_init();
     
-    // Demonstrate a small table
-    vga_setcolor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
-    kprintf("Number Table:\n");
-    vga_setcolor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
-    kprintf("Decimal | Hex\n");
-    kprintf("--------|----\n");
-    kprintf("%8d|%4x\n", 0, 0);
-    kprintf("%8d|%4x\n", 10, 10);
-    kprintf("%8d|%4x\n", 255, 255);
-    kprintf("%8d|%4x\n", 4096, 4096);
-    kprintf("%8d|%4x\n", 65535, 65535);
+    kprintf("\nSystem initialization complete!\n\n");
     
-    // Also output to serial for headless testing
-    serial_write_string("=== Nexus OS v0.1 ===\r\n");
-    serial_write_string("VGA driver and kprintf initialized successfully\r\n");
-    serial_write_string("All format specifiers working correctly\r\n");
-    
-    // Kernel should never return in a real OS
-    // If it does, boot.asm will halt the CPU
-    while (1) {
-        // Infinite loop
-    }
+    // Start the interactive shell
+    shell_run();
 }

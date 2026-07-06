@@ -49,6 +49,6 @@ _start:
 section .bss
 align 16
 stack_bottom:
-    ; Reserve 16KB for stack (4096 * 4 bytes)
-    resb 16384
+    ; Reserve 64KB for stack (16384 * 4 bytes)
+    resb 65536
 stack_top:
